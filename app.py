@@ -67,14 +67,44 @@ st.set_page_config(
     page_title="校园寻物",
     page_icon="🔍",
     layout="centered",
+    # 侧边栏默认展开。
+    # 说明：Streamlit 会把“用户手动收起”这个选择记在浏览器的 localStorage 里，
+    # 所以 "expanded" 能保证“首次访问时默认展开”；如果用户自己收起后又刷新，
+    # 浏览器可能仍然保持收起——此时顶栏和展开箭头都可见，点一下就能打开，
+    # 不会再出现“锁死打不开”的情况。
+    # 如果希望桌面端彻底禁止收起（强制常开），可以把下面改成 "locked"。
+    initial_sidebar_state="expanded",
 )
 
-# 隐藏 Streamlit 默认的主菜单、页脚和顶部工具栏，让页面更像独立 App。
+# 隐藏 Streamlit 默认的主菜单、部署按钮和页脚，让页面更像独立 App。
+#
+# 【重要】绝对不要隐藏整个顶栏（header / [data-testid="stHeader"]）：
+# 侧边栏的“展开箭头”就渲染在顶栏区域里，把 header 设成 visibility: hidden
+# 会把箭头一起隐藏，用户一旦收起侧边栏，页面上就再也找不到打开它的入口了
+# （这正是之前那个严重 Bug 的原因）。
+#
+# 安全做法：保留顶栏本身，只隐藏里面的具体按钮。
+# 顶栏是白色的并不影响美观，导航能用才是第一位的。
 hide_menu_style = """
         <style>
+        /* 右上角的三点主菜单 */
         #MainMenu {visibility: hidden;}
+
+        /* 右上角的 Deploy 按钮：新版用 data-testid，老版用 class，
+           两个选择器都写上，升级 Streamlit 后也不会漏掉 */
+        [data-testid="stAppDeployButton"],
+        .stDeployButton {display: none;}
+
+        /* 页脚的 “Made with Streamlit” */
         footer {visibility: hidden;}
-        header {visibility: hidden;}
+
+        /* 双保险：显式保证侧边栏的展开/收起按钮可见、可点击。
+           （新版是 stExpandSidebarButton，旧版是 stSidebarCollapseButton） */
+        [data-testid="stExpandSidebarButton"],
+        [data-testid="stSidebarCollapseButton"] {
+            visibility: visible !important;
+            pointer-events: auto !important;
+        }
         </style>
         """
 st.markdown(hide_menu_style, unsafe_allow_html=True)
